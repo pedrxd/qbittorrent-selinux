@@ -1,0 +1,12 @@
+[Unit]
+Description=qBitTorrent
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/qbittorrent-nox --profile=/var/lib/
+User=qbt
+Group=qbt
+
+[Install]
+WantedBy=multi-user.target

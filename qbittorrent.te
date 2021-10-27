@@ -1,0 +1,130 @@
+policy_module(qbittorrent, 1.0.0)
+
+gen_require(`
+    type net_conf_t;
+    type fs_t;
+    type fixed_disk_device_t;
+    type mnt_t;
+')
+
+########################################
+#
+# Declarations
+#
+
+## <desc>
+##  <p>
+##  Determine whether Qbittorrent can access to cert privkeys
+##  </p>
+## </desc>
+gen_tunable(qbittorrent_read_privkeys, false)
+
+
+## <desc>
+##  <p>
+##  Determine whether Qbittorrent can access mount folders
+##  </p>
+## </desc>
+gen_tunable(qbittorrent_dir_search_mountpoints, false)
+
+
+
+type qbittorrent_t;
+type qbittorrent_exec_t;
+init_daemon_domain(qbittorrent_t, qbittorrent_exec_t)
+application_domain(qbittorrent_t, qbittorrent_exec_t)
+
+type qbittorrent_initrc_exec_t;
+init_script_file(qbittorrent_initrc_exec_t);
+
+type qbittorrent_unit_t;
+init_unit_file(qbittorrent_unit_t)
+
+type qbittorrent_var_t;
+files_type(qbittorrent_var_t)
+
+type qbittorrent_downloads_t;
+files_type(qbittorrent_downloads_t)
+
+type qbittorrent_tmp_t;
+files_tmp_file(qbittorrent_tmp_t)
+
+########################################
+#
+# Local policy
+#
+
+allow qbittorrent_t fs_t:filesystem getattr;
+
+files_search_var_lib(qbittorrent_t)
+manage_files_pattern(qbittorrent_t, qbittorrent_var_t, qbittorrent_var_t)
+manage_dirs_pattern(qbittorrent_t, qbittorrent_var_t, qbittorrent_var_t)
+
+manage_files_pattern(qbittorrent_t, qbittorrent_downloads_t, qbittorrent_downloads_t)
+manage_dirs_pattern(qbittorrent_t, qbittorrent_downloads_t, qbittorrent_downloads_t)
+
+# Acceso a resolv.conf y otros archivos
+allow qbittorrent_t net_conf_t:file { getattr ioctl open read };
+
+manage_dirs_pattern(qbittorrent_t, qbittorrent_tmp_t, qbittorrent_tmp_t)
+manage_files_pattern(qbittorrent_t, qbittorrent_tmp_t, qbittorrent_tmp_t)
+manage_sock_files_pattern(qbittorrent_t, qbittorrent_tmp_t, qbittorrent_tmp_t)
+files_tmp_filetrans(qbittorrent_t, qbittorrent_tmp_t, {file dir sock_file})
+
+tunable_policy(`qbittorrent_dir_search_mountpoints',`
+  getattr_dirs_pattern(qbittorrent_t, mnt_t, mnt_t)
+')
+
+############
+## Lectura estado de kernel
+kernel_read_network_state(qbittorrent_t)
+kernel_read_system_state(qbittorrent_t)
+kernel_read_vm_overcommit_sysctl(qbittorrent_t)
+
+allow qbittorrent_t fixed_disk_device_t:blk_file getattr;
+
+dbus_system_bus_client(qbittorrent_t)
+
+############
+## Lectura de datos aleatorios
+
+dev_read_urand(qbittorrent_t)
+dev_read_rand(qbittorrent_t)
+
+############
+## RED INTERNA ##
+allow qbittorrent_t self:tcp_socket create_stream_socket_perms;
+allow qbittorrent_t self:netlink_route_socket r_netlink_socket_perms;
+
+allow qbittorrent_t self:udp_socket create_socket_perms;
+allow qbittorrent_t self:unix_dgram_socket create_socket_perms;
+
+############
+## RED EXTERNA ##
+
+corenet_tcp_bind_http_port(qbittorrent_t)
+corenet_tcp_bind_http_cache_port(qbittorrent_t)
+corenet_tcp_connect_http_cache_port(qbittorrent_t)
+corenet_tcp_connect_http_port(qbittorrent_t)
+
+corenet_udp_bind_generic_node(qbittorrent_t)
+corenet_udp_bind_generic_port(qbittorrent_t)
+corenet_udp_bind_all_unreserved_ports(qbittorrent_t)
+
+corenet_tcp_bind_generic_node(qbittorrent_t)
+corenet_tcp_connect_generic_port(qbittorrent_t)
+corenet_tcp_bind_all_unreserved_ports(qbittorrent_t)
+corenet_tcp_connect_all_unreserved_ports(qbittorrent_t)
+
+
+############
+## Lectura de certificados
+
+files_read_usr_files(qbittorrent_t)
+allow qbittorrent_t usr_t:file map;
+miscfiles_read_generic_certs(qbittorrent_t)
+miscfiles_read_localization(qbittorrent_t)
+
+tunable_policy(`qbittorrent_read_privkeys',`
+  miscfiles_read_generic_tls_privkey(qbittorrent_t)
+')

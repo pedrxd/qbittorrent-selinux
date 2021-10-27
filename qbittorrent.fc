@@ -1,0 +1,8 @@
+/usr/bin/qbittorrent-nox                          -- gen_context(system_u:object_r:qbittorrent_exec_t,s0)
+
+/usr/lib/systemd/system/qbittorrent\.service       -- gen_context(system_u:object_r:qbittorrent_unit_t,s0)
+
+/var/lib/qBittorrent(/.*)?                         gen_context(system_u:object_r:qbittorrent_var_t,s0)
+/var/lib/qBittorrent/downloads(/.*)?               gen_context(system_u:object_r:qbittorrent_downloads_t,s0)
+
+/tmp/qtsingleapp-qBitto(\-[a-f1-9]*)*(lockfile)?              gen_context(system_u:object_r:qbittorrent_tmp_t,s0)
